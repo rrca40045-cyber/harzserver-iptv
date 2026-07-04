@@ -1,0 +1,6 @@
+{
+    "name": "harzserver-iptv",
+    "require": {
+        "php": ">=8.0"
+    }
+}
