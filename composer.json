@@ -1,5 +1,5 @@
 {
-    "name": "harzserver-iptv",
+    "name": "harzserver/iptv-panel",
     "require": {
         "php": ">=8.0"
     }
