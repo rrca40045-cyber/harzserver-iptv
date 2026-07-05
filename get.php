@@ -30,8 +30,9 @@ if ($type === 'm3u_plus' || $type === 'm3u') {
     echo "#EXTM3U\n";
     foreach ($channels as $ch) {
         echo '#EXTINF:-1 tvg-id="' . htmlspecialchars($ch['epg_id']) . '" tvg-logo="' . htmlspecialchars($ch['logo']) . '" group-title="' . htmlspecialchars($ch['cat_name']) . '",' . htmlspecialchars($ch['name']) . "\n";
-        // رابط البث الأصلي مباشرة (بلا ما يمر عبر /live/ redirect)
-        echo $ch['stream_url'] . "\n";
+        // رابط عبر البروكسي ديالنا (بلا ما يبين الرابط الأصلي)
+        $protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
+        echo $protocol . '://' . $_SERVER['HTTP_HOST'] . '/live.php?u=' . urlencode($username) . '&p=' . urlencode($password) . '&id=' . $ch['id'] . "\n";
     }
     exit;
 }
