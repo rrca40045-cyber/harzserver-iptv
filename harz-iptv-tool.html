@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HARZ TOOL — دمج وإدارة القنوات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0805;
+    --panel:#160d09;
+    --panel2:#1e130d;
+    --line:#3a231a;
+    --gold:#e8b34d;
+    --gold-dim:#8a6a2e;
+    --red:#c9273f;
+    --red-dim:#5e1522;
+    --text:#f2e6d8;
+    --muted:#9c8776;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, #241208 0%, transparent 45%),
+      radial-gradient(ellipse at bottom right, #1a0a0a 0%, transparent 50%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Cairo',sans-serif;
+    min-height:100vh;
+  }
+  .noise{position:fixed;inset:0;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    z-index:0;}
+
+  header{
+    position:relative;
+    padding:34px 22px 26px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(201,39,63,.08), transparent);
+  }
+  header .eyebrow{
+    font-family:var(--mono);
+    letter-spacing:.35em;
+    font-size:11px;
+    color:var(--gold-dim);
+    margin-bottom:10px;
+  }
+  header h1{
+    margin:0;
+    font-size:clamp(28px,5vw,42px);
+    font-weight:900;
+    background:linear-gradient(90deg,var(--gold),#fff6df 45%,var(--red));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    letter-spacing:1px;
+  }
+  header p{color:var(--muted);margin:10px 0 0;font-size:14px;}
+
+  .wrap{max-width:980px;margin:0 auto;padding:26px 16px 80px;position:relative;z-index:1;}
+
+  .tabs{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:22px;}
+  .tab{
+    flex:1;text-align:center;padding:12px 8px;border-radius:10px;cursor:pointer;
+    font-weight:700;font-size:14px;color:var(--muted);transition:.25s;user-select:none;
+  }
+  .tab.active{background:linear-gradient(135deg,var(--red),#8a1526);color:#fff6df;box-shadow:0 4px 18px rgba(201,39,63,.35);}
+  .tab:not(.active):hover{color:var(--text);background:var(--panel2);}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px;
+    margin-bottom:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .card h2{margin:0 0 4px;font-size:18px;color:var(--gold);}
+  .card .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;line-height:1.7;}
+
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:600;}
+  input[type=text],input[type=password],textarea{
+    width:100%;background:#0f0906;border:1px solid var(--line);color:var(--text);
+    padding:11px 12px;border-radius:10px;font-family:var(--mono);font-size:13px;direction:ltr;text-align:right;
+    outline:none;transition:.2s;
+  }
+  textarea{min-height:90px;resize:vertical;}
+  input:focus,textarea:focus{border-color:var(--gold-dim);box-shadow:0 0 0 3px rgba(232,179,77,.12);}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .row > *{flex:1;min-width:160px;}
+
+  .file-drop{
+    border:1.5px dashed var(--line);border-radius:12px;padding:16px;text-align:center;
+    color:var(--muted);font-size:13px;cursor:pointer;margin-top:8px;transition:.2s;
+  }
+  .file-drop:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  button.action{
+    margin-top:18px;width:100%;padding:14px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--gold),#b9812a);color:#1a0f06;font-weight:800;font-size:15px;
+    cursor:pointer;letter-spacing:.3px;transition:.2s;
+  }
+  button.action:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  button.action:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:9px 14px;border-radius:9px;font-size:12.5px;cursor:pointer;font-weight:700;
+  }
+  button.ghost:hover{color:var(--gold);border-color:var(--gold-dim);}
+
+  .scan{display:none;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border-radius:10px;background:#0f0906;border:1px solid var(--line);}
+  .scan.on{display:flex;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--red);animation:pulse 1.1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(201,39,63,.5);}50%{opacity:.4;box-shadow:0 0 0 6px rgba(201,39,63,0);}}
+  .scan span{font-family:var(--mono);font-size:12.5px;color:var(--muted);}
+
+  .err{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(201,39,63,.08);border:1px solid var(--red-dim);color:#f4b8c2;font-size:13px;line-height:1.8;}
+  .err.on{display:block;}
+  .ok{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(232,179,77,.08);border:1px solid var(--gold-dim);color:var(--gold);font-size:13px;}
+  .ok.on{display:block;}
+
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;}
+  .stat{
+    flex:1;min-width:110px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px;text-align:center;
+  }
+  .stat b{display:block;font-size:22px;color:var(--gold);font-family:var(--mono);}
+  .stat span{font-size:11.5px;color:var(--muted);}
+
+  .filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .filters input[type=text]{flex:2;min-width:160px;}
+  .filters select{flex:1;min-width:130px;background:#0f0906;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;font-family:var(--mono);font-size:12.5px;}
+
+  .list{max-height:480px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:#0f0906;}
+  .list::-webkit-scrollbar{width:8px;}
+  .list::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
+  .item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);}
+  .item:last-child{border-bottom:none;}
+  .item img{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#241a12;flex-shrink:0;}
+  .item .noimg{width:36px;height:36px;border-radius:8px;background:#241a12;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:var(--gold-dim);}
+  .item .meta{flex:1;min-width:0;}
+  .item .name{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item .cat{font-size:11px;color:var(--muted);font-family:var(--mono);}
+  .item input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;}
+
+  .footerbar{
+    position:sticky;bottom:0;margin-top:18px;padding:16px;border-radius:14px;
+    background:var(--panel2);border:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    box-shadow:0 -10px 30px rgba(0,0,0,.4);
+  }
+  .footerbar .count{font-family:var(--mono);font-size:13px;color:var(--muted);flex:1;min-width:140px;}
+  .footerbar button.action{margin:0;width:auto;flex:1;min-width:160px;}
+
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:20px;background:var(--red-dim);color:#f4b8c2;margin-inline-start:8px;}
+  .empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<header>
+  <div class="eyebrow">ROMANIO&nbsp;·&nbsp;IPTV&nbsp;TOOLKIT</div>
+  <h1>HARZ TOOL</h1>
+  <p>اقرأ روابط M3U أو حسابات Xtream ديالك، دمّج القنوات، وصدّر ملف واحد نظيف</p>
+</header>
+
+<div class="wrap">
+
+  <div class="card" style="border-color:var(--gold-dim)">
+    <h2>⚙️ إعداد البروكسي (proxy.php)</h2>
+    <p class="hint">حط هنا الرابط ديال proxy.php اللي رفعتيه فسيرفر Railway ديالك. بدونه الموقع ما يقدرش يجلب من سيرفرات ماكتسمحش بـ CORS.</p>
+    <input type="text" id="proxyBase" placeholder="https://harzserver-iptv-production.up.railway.app/proxy.php">
+    <div class="ok on" style="margin-top:10px" id="proxyHintOk">ملحوظة: إلا ما حطيتيش رابط بروكسي، الموقع غادي يجرب يتصل مباشرة (كيخدم غير مع سيرفرات قليلة كتسمح بـ CORS).</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="m3u">📄 رابط M3U</div>
+    <div class="tab" data-tab="xtream">🔑 حساب Xtream</div>
+    <div class="tab" data-tab="merge">📦 الدمج والتصدير <span class="badge" id="mergeCountBadge">0</span></div>
+  </div>
+
+  <!-- ================= M3U TAB ================= -->
+  <section id="tab-m3u">
+    <div class="card">
+      <h2>استيراد من رابط M3U</h2>
+      <p class="hint">حط الرابط ديال ملف الـ M3U (كيفما هدا: m3u-hoster.../playlist.m3u) ولا ارفع الملف من هاتفك.</p>
+
+      <label>رابط M3U</label>
+      <input type="text" id="m3uUrl" placeholder="https://example.com/playlist.m3u">
+
+      <div class="file-drop" id="m3uDrop">
+        📁 ولا دوس هنا باش تختار ملف .m3u من الهاتف
+        <input type="file" id="m3uFile" accept=".m3u,.m3u8,text/plain" style="display:none">
+      </div>
+
+      <button class="action" id="m3uLoadBtn">جلب القنوات من الرابط</button>
+
+      <div class="scan" id="m3uScan"><div class="dot"></div><span>كنقرا الملف...</span></div>
+      <div class="err" id="m3uErr"></div>
+      <div class="ok" id="m3uOk"></div>
+    </div>
+
+    <div id="m3uResults"></div>
+  </section>
+
+  <!-- ================= XTREAM TAB ================= -->
+  <section id="tab-xtream" style="display:none">
+    <div class="card">
+      <h2>تسجيل الدخول لحساب Xtream Codes</h2>
+      <p class="hint">حط بيانات الحساب ديالك (Host / Username / Password). الأداة كتصاوب طلب مباشر لسيرفر الحساب ديالك فقط.</p>
+
+      <label>Host (مع البورت)</label>
+      <input type="text" id="xtHost" placeholder="http://goiptv.co:8080">
+
+      <div class="row">
+        <div>
+          <label>Username</label>
+          <input type="text" id="xtUser" placeholder="b8:b4:09:56:5a:08">
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="text" id="xtPass" placeholder="43rlygw5bs6ORC">
+        </div>
+      </div>
+
+      <label style="margin-top:14px">ولا ألصق رابط get.php مباشرة (اختياري، كيعوض الحقول اللي فوق)</label>
+      <textarea id="xtDirectUrl" placeholder="http://goiptv.co:8080/get.php?username=...&password=...&type=m3u"></textarea>
+
+      <div class="row" style="margin-top:6px">
+        <button class="action" id="xtLoadLiveBtn">جلب القنوات المباشرة (Live)</button>
+        <button class="action" id="xtLoadVodBtn" style="background:linear-gradient(135deg,#e85d75,var(--red));color:#fff6df;">جلب الأفلام (VOD)</button>
+      </div>
+      <button class="action" id="xtLoadSeriesBtn" style="background:linear-gradient(135deg,#8a4dc9,#5e2c8a);color:#fff6df;">جلب المسلسلات (Series)</button>
+
+      <div class="scan" id="xtScan"><div class="dot"></div><span>كنتصل بالسيرفر...</span></div>
+      <div class="err" id="xtErr"></div>
+      <div class="ok" id="xtOk"></div>
+    </div>
+
+    <div id="xtResults"></div>
+  </section>
+
+  <!-- ================= MERGE TAB ================= -->
+  <section id="tab-merge" style="display:none">
+    <div class="card">
+      <h2>الملف الموحّد</h2>
+      <p class="hint">هنا كتلقى جميع القنوات/الأفلام اللي عاوجتيهم من M3U و Xtream. بدّل المختار وصدّر ملف M3U واحد.</p>
+      <div class="stats">
+        <div class="stat"><b id="statTotal">0</b><span>مجموع العناصر</span></div>
+        <div class="stat"><b id="statSelected">0</b><span>مختارين للتصدير</span></div>
+        <div class="stat"><b id="statCats">0</b><span>كاتيغوريات</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <input type="text" id="mergeSearch" placeholder="🔍 بحث بالاسم...">
+        <select id="mergeCatFilter"><option value="">كل الكاتيغوريات</option></select>
+        <select id="mergeSrcFilter">
+          <option value="">كل المصادر</option>
+          <option value="m3u">M3U</option>
+          <option value="xtream-live">Xtream Live</option>
+          <option value="xtream-vod">Xtream VOD</option>
+          <option value="xtream-series">Xtream Series</option>
+        </select>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="ghost" id="selAllBtn">✅ اختار الكل</button>
+        <button class="ghost" id="deselAllBtn">❌ بطّل الكل</button>
+        <button class="ghost" id="clearAllBtn">🗑️ فرّغ القائمة</button>
+      </div>
+      <div class="list" id="mergeList"><div class="empty">مازال ما زدتيش شي حاجة. دخل لـ M3U ولا Xtream وجيب القنوات.</div></div>
+    </div>
+
+    <div class="footerbar">
+      <div class="count" id="footCount">0 عنصر مختار</div>
+      <input type="text" id="exportName" value="HARZ_MERGED" style="max-width:220px" placeholder="اسم الملف">
+      <button class="action" id="exportBtn">⬇️ صدّر ملف M3U</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// دولة مركزية: كل القنوات المجلوبة توتحط هنا موحدة
+// ---------------------------------------------------------------
+let store = []; // {id, name, logo, category, url, source, selected}
+let idCounter = 0;
+
+function newId(){ return 'ch_' + (++idCounter); }
+
+// ---------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    ['m3u','xtream','merge'].forEach(name=>{
+      document.getElementById('tab-'+name).style.display = (name===t.dataset.tab) ? 'block' : 'none';
+    });
+    if(t.dataset.tab==='merge') renderMerge();
+  });
+});
+
+// ---------------------------------------------------------------
+// M3U PARSER
+// ---------------------------------------------------------------
+function parseM3U(text, sourceTag){
+  const lines = text.split(/\r?\n/);
+  const items = [];
+  let current = null;
+  for(let raw of lines){
+    const line = raw.trim();
+    if(line.startsWith('#EXTINF')){
+      const nameMatch = line.match(/,(.*)$/);
+      const logoMatch = line.match(/tvg-logo="([^"]*)"/i);
+      const groupMatch = line.match(/group-title="([^"]*)"/i);
+      current = {
+        name: nameMatch ? nameMatch[1].trim() : 'بدون اسم',
+        logo: logoMatch ? logoMatch[1] : '',
+        category: groupMatch ? groupMatch[1] : 'عام',
+      };
+    } else if(line && !line.startsWith('#') && current){
+      items.push({
+        id:newId(), name:current.name, logo:current.logo,
+        category:current.category, url:line, source:sourceTag, selected:true
+      });
+      current = null;
+    }
+  }
+  return items;
+}
+
+function showErr(elId,msg){
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.add('on');
+}
+function hideErr(elId){ document.getElementById(elId).classList.remove('on'); }
+function showOk(elId,msg){
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.add('on');
+  setTimeout(()=>el.classList.remove('on'), 4000);
+}
+
+// ---------------------------------------------------------------
+// M3U TAB LOGIC
+// ---------------------------------------------------------------
+document.getElementById('m3uDrop').addEventListener('click', ()=> document.getElementById('m3uFile').click());
+document.getElementById('m3uFile').addEventListener('change', async (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  hideErr('m3uErr');
+  const text = await f.text();
+  const items = parseM3U(text, 'm3u');
+  handleM3UResult(items, f.name);
+});
+
+function getProxyBase(){
+  return document.getElementById('proxyBase').value.trim().replace(/\/$/,'');
+}
+
+document.getElementById('m3uLoadBtn').addEventListener('click', async ()=>{
+  const url = document.getElementById('m3uUrl').value.trim();
+  hideErr('m3uErr');
+  if(!url){ showErr('m3uErr','خصك تدخل رابط أولاً.'); return; }
+  const scan = document.getElementById('m3uScan');
+  scan.classList.add('on');
+  const proxy = getProxyBase();
+  const fetchUrl = proxy ? `${proxy}?mode=m3u&url=${encodeURIComponent(url)}` : url;
+  try{
+    const res = await fetch(fetchUrl);
+    if(!res.ok) throw new Error('السيرفر رجع خطأ: ' + res.status);
+    const text = await res.text();
+    if(text.trim().startsWith('{') && text.includes('"error"')){
+      const j = JSON.parse(text);
+      throw new Error(j.error || 'خطأ من البروكسي');
+    }
+    const items = parseM3U(text, 'm3u');
+    handleM3UResult(items, url);
+  }catch(err){
+    if(proxy){
+      showErr('m3uErr', '❌ ' + err.message + ' — تأكد أن proxy.php مرفوع صحيح فالسيرفر وأن الرابط ديالو صحيح.');
+    }else{
+      showErr('m3uErr', '❌ ما قدرتش نوصل للرابط مباشرة (غالبا مشكل CORS). الحل: زيد رابط ديال proxy.php فوق فخانة "إعداد البروكسي"، ولا حمل الملف يدويا وارفعو من "اختار ملف".');
+    }
+  }finally{
+    scan.classList.remove('on');
+  }
+});
+
+function handleM3UResult(items, label){
+  if(items.length===0){
+    showErr('m3uErr','ما لقيتش شي قناة صحيحة فهاد الملف.');
+    return;
+  }
+  store = store.concat(items);
+  showOk('m3uOk', `✅ تزادو ${items.length} عنصر من ${label}`);
+  renderList('m3uResults', items);
+  updateBadge();
+}
+
+// ---------------------------------------------------------------
+// XTREAM TAB LOGIC
+// ---------------------------------------------------------------
+function parseXtreamInputs(){
+  const direct = document.getElementById('xtDirectUrl').value.trim();
+  if(direct){
+    try{
+      const u = new URL(direct);
+      return {
+        host: u.origin,
+        user: u.searchParams.get('username'),
+        pass: u.searchParams.get('password')
+      };
+    }catch(e){ return null; }
+  }
+  const host = document.getElementById('xtHost').value.trim().replace(/\/$/,'');
+  const user = document.getElementById('xtUser').value.trim();
+  const pass = document.getElementById('xtPass').value.trim();
+  if(!host || !user || !pass) return null;
+  return {host, user, pass};
+}
+
+async function xtreamFetch(action){
+  const creds = parseXtreamInputs();
+  hideErr('xtErr');
+  if(!creds){ showErr('xtErr','عمر البيانات (Host/User/Pass) ولا الرابط المباشر بشكل صحيح.'); return null; }
+
+  const scan = document.getElementById('xtScan');
+  scan.classList.add('on');
+  const proxy = getProxyBase();
+  const apiUrl = proxy
+    ? `${proxy}?mode=xtream&host=${encodeURIComponent(creds.host)}&user=${encodeURIComponent(creds.user)}&pass=${encodeURIComponent(creds.pass)}&action=${encodeURIComponent(action)}`
+    : `${creds.host}/player_api.php?username=${encodeURIComponent(creds.user)}&password=${encodeURIComponent(creds.pass)}&action=${action}`;
+  try{
+    const res = await fetch(apiUrl);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(data && data.error) throw new Error(data.error);
+    return {data, creds};
+  }catch(err){
+    if(proxy){
+      showErr('xtErr', '❌ ' + err.message);
+    }else{
+      showErr('xtErr', '❌ ما قدرتش نتصل بالسيرفر مباشرة (غالبا CORS). زيد رابط proxy.php فوق فخانة "إعداد البروكسي" وعاود جرب.');
+    }
+    return null;
+  }finally{
+    scan.classList.remove('on');
+  }
+}
+
+function buildStreamUrl(host, user, pass, streamId, ext, kind){
+  if(kind==='live') return `${host}/${user}/${pass}/${streamId}.${ext||'m3u8'}`;
+  if(kind==='movie') return `${host}/movie/${user}/${pass}/${streamId}.${ext||'mp4'}`;
+  if(kind==='series') return `${host}/series/${user}/${pass}/${streamId}.${ext||'mp4'}`;
+}
+
+document.getElementById('xtLoadLiveBtn').addEventListener('click', async ()=>{
+  const r = await xtreamFetch('get_live_streams');
+  if(!r) return;
+  const {data, creds} = r;
+  if(!Array.isArray(data) || data.length===0){ showErr('xtErr','ماكاينش شي قنوات مباشرة فهاد الحساب.'); return; }
+  const items = data.map(ch=>({
+    id:newId(),
+    name:ch.name || 'بدون اسم',
+    logo:ch.stream_icon || '',
+    category: ch.category_id ? 'قناة #'+ch.category_id : 'عام',
+    url: buildStreamUrl(creds.host, creds.user, creds.pass, ch.stream_id, ch.container_extension, 'live'),
+    source:'xtream-live', selected:true
+  }));
+  store = store.concat(items);
+  showOk('xtOk', `✅ تزادو ${items.length} قناة مباشرة`);
+  renderList('xtResults', items);
+  updateBadge();
+});
+
+document.getElementById('xtLoadVodBtn').addEventListener('click', async ()=>{
+  const r = await xtreamFetch('get_vod_streams');
+  if(!r) return;
+  const {data, creds} = r;
+  if(!Array.isArray(data) || data.length===0){ showErr('xtErr','ماكاينش شي أفلام فهاد الحساب.'); return; }
+  const items = data.map(m=>({
+    id:newId(),
+    name:m.name || 'بدون اسم',
+    logo:m.stream_icon || '',
+    category: 'أفلام',
+    url: buildStreamUrl(creds.host, creds.user, creds.pass, m.stream_id, m.container_extension, 'movie'),
+    source:'xtream-vod', selected:true
+  }));
+  store = store.concat(items);
+  showOk('xtOk', `✅ تزادو ${items.length} فيلم`);
+  renderList('xtResults', items);
+  updateBadge();
+});
+
+document.getElementById('xtLoadSeriesBtn').addEventListener('click', async ()=>{
+  const r = await xtreamFetch('get_series');
+  if(!r) return;
+  const {data} = r;
+  if(!Array.isArray(data) || data.length===0){ showErr('xtErr','ماكاينش شي مسلسلات فهاد الحساب.'); return; }
+  const items = data.map(s=>({
+    id:newId(),
+    name:s.name || 'بدون اسم',
+    logo:s.cover || '',
+    category:'مسلسلات',
+    url:'', // series need series_info per-episode; note added below
+    source:'xtream-series', selected:true, isSeriesPlaceholder:true, series_id:s.series_id
+  }));
+  store = store.concat(items);
+  showOk('xtOk', `✅ تزادو ${items.length} مسلسل (خاصك تدخل لكل مسلسل باش تجيب الحلقات لحال — النسخة الحالية كتجيب لائحة المسلسلات فقط)`);
+  renderList('xtResults', items);
+  updateBadge();
+});
+
+// ---------------------------------------------------------------
+// Rendering small preview lists under each tab
+// ---------------------------------------------------------------
+function renderList(containerId, items){
+  const container = document.getElementById(containerId);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<h2>معاينة (${items.length})</h2><div class="list"></div>`;
+  const list = card.querySelector('.list');
+  items.slice(0,50).forEach(it=>{
+    list.appendChild(buildItemRow(it, false));
+  });
+  if(items.length>50){
+    const more = document.createElement('div');
+    more.className='empty';
+    more.textContent = `... و ${items.length-50} عنصر آخر (كاملين تزادو للدمج)`;
+    list.appendChild(more);
+  }
+  container.prepend(card);
+}
+
+function buildItemRow(it, withCheckbox){
+  const row = document.createElement('div');
+  row.className='item';
+  row.innerHTML = `
+    ${withCheckbox ? `<input type="checkbox" ${it.selected?'checked':''} data-id="${it.id}">` : ''}
+    ${it.logo ? `<img src="${it.logo}" onerror="this.style.display='none'">` : `<div class="noimg">📺</div>`}
+    <div class="meta">
+      <div class="name">${escapeHtml(it.name)}</div>
+      <div class="cat">${escapeHtml(it.category)} · ${it.source}</div>
+    </div>
+  `;
+  if(withCheckbox){
+    row.querySelector('input[type=checkbox]').addEventListener('change', (e)=>{
+      const target = store.find(x=>x.id===it.id);
+      if(target) target.selected = e.target.checked;
+      updateMergeStats();
+    });
+  }
+  return row;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function updateBadge(){
+  document.getElementById('mergeCountBadge').textContent = store.length;
+}
+
+// ---------------------------------------------------------------
+// MERGE TAB
+// ---------------------------------------------------------------
+function populateCatFilter(){
+  const sel = document.getElementById('mergeCatFilter');
+  const cats = [...new Set(store.map(i=>i.category))].sort();
+  sel.innerHTML = '<option value="">كل الكاتيغوريات</option>' + cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function renderMerge(){
+  populateCatFilter();
+  applyMergeFilters();
+  updateMergeStats();
+}
+
+function applyMergeFilters(){
+  const q = document.getElementById('mergeSearch').value.trim().toLowerCase();
+  const cat = document.getElementById('mergeCatFilter').value;
+  const src = document.getElementById('mergeSrcFilter').value;
+  const list = document.getElementById('mergeList');
+  list.innerHTML = '';
+
+  const filtered = store.filter(it=>{
+    if(q && !it.name.toLowerCase().includes(q)) return false;
+    if(cat && it.category!==cat) return false;
+    if(src && it.source!==src) return false;
+    return true;
+  });
+
+  if(filtered.length===0){
+    list.innerHTML = '<div class="empty">ماكاينش شي نتيجة. بدّل الفلاتر ولا زيد قنوات من M3U/Xtream.</div>';
+    return;
+  }
+  filtered.forEach(it=> list.appendChild(buildItemRow(it, true)));
+}
+
+['mergeSearch','mergeCatFilter','mergeSrcFilter'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', applyMergeFilters);
+});
+
+document.getElementById('selAllBtn').addEventListener('click', ()=>{
+  store.forEach(i=>i.selected=true); applyMergeFilters(); updateMergeStats();
+});
+document.getElementById('deselAllBtn').addEventListener('click', ()=>{
+  store.forEach(i=>i.selected=false); applyMergeFilters(); updateMergeStats();
+});
+document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+  if(confirm('متأكد بغيتي تفرغ القائمة كاملة؟')){
+    store = [];
+    document.getElementById('m3uResults').innerHTML='';
+    document.getElementById('xtResults').innerHTML='';
+    applyMergeFilters(); updateMergeStats(); updateBadge();
+  }
+});
+
+function updateMergeStats(){
+  document.getElementById('statTotal').textContent = store.length;
+  document.getElementById('statSelected').textContent = store.filter(i=>i.selected).length;
+  document.getElementById('statCats').textContent = new Set(store.map(i=>i.category)).size;
+  document.getElementById('footCount').textContent = store.filter(i=>i.selected).length + ' عنصر مختار';
+  updateBadge();
+}
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const selected = store.filter(i=>i.selected && i.url);
+  if(selected.length===0){ alert('ما كاين حتى عنصر مختار عندو رابط صالح للتصدير.'); return; }
+  let out = '#EXTM3U\n';
+  selected.forEach(it=>{
+    out += `#EXTINF:-1 tvg-logo="${it.logo}" group-title="${it.category}",${it.name}\n${it.url}\n`;
+  });
+  const name = (document.getElementById('exportName').value.trim() || 'HARZ_MERGED') + '.m3u';
+  const blob = new Blob([out], {type:'application/x-mpegurl'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+</script>
+</body>
+</html>
